@@ -585,7 +585,7 @@ export function GiftLists() {
           <Heart className="w-3.5 h-3.5 fill-[#F8BC31] text-[#F8BC31]" />
           <span>by</span>
           <a
-            href="https://crafter.station"
+            href="https://www.crafterstation.com/"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
