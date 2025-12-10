@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, ExternalLink, Copy, Trash2, Share2 } from "lucide-react"
+import { Plus, ExternalLink, Copy, Trash2, Share2, Menu, X, Github, Heart } from "lucide-react"
+import { CrafterStationLogo } from "@/components/logos/crafter-station"
 import { toast } from "sonner"
 import { useLists } from "@/lib/hooks/use-lists"
 import type { GiftListWithGifts, Gift } from "@/lib/db/schema"
@@ -30,6 +31,7 @@ export function GiftLists() {
   const [activeList, setActiveList] = useState<string>("")
   const [isCreatingGiftModal, setIsCreatingGiftModal] = useState(false)
   const [giftUrl, setGiftUrl] = useState("")
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     if (lists.length > 0 && !activeList) {
@@ -51,20 +53,112 @@ export function GiftLists() {
     })
   }
 
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text)
+        return true
+      } catch (err) {
+        console.warn("Clipboard API failed, trying fallback", err)
+      }
+    }
+
+    const textArea = document.createElement("textarea")
+    textArea.value = text
+    textArea.setAttribute("readonly", "")
+    textArea.style.position = "absolute"
+    textArea.style.left = "-9999px"
+    textArea.style.top = "0"
+    textArea.style.width = "2em"
+    textArea.style.height = "2em"
+    textArea.style.padding = "0"
+    textArea.style.border = "none"
+    textArea.style.outline = "none"
+    textArea.style.boxShadow = "none"
+    textArea.style.background = "transparent"
+    
+    document.body.appendChild(textArea)
+    
+    if (navigator.userAgent.match(/ipad|iphone/i)) {
+      const range = document.createRange()
+      range.selectNodeContents(textArea)
+      const selection = window.getSelection()
+      selection?.removeAllRanges()
+      selection?.addRange(range)
+      textArea.setSelectionRange(0, 999999)
+    } else {
+      textArea.select()
+    }
+
+    try {
+      const successful = document.execCommand("copy")
+      document.body.removeChild(textArea)
+      return successful
+    } catch (err) {
+      document.body.removeChild(textArea)
+      return false
+    }
+  }
+
   const handleShareList = async (list: GiftListWithGifts) => {
     const shareToken = list.shareToken
-    if (shareToken) {
-      const url = `${window.location.origin}/l/${shareToken}`
+    if (!shareToken) return
+
+    const url = `${window.location.origin}/l/${shareToken}`
+
+    if (navigator.share && /Mobile|Android|iPhone|iPad/.test(navigator.userAgent)) {
       try {
-        await navigator.clipboard.writeText(url)
-        toast.success("Link copied!", {
-          description: "Share this link with others",
+        await navigator.share({
+          title: list.name,
+          text: `Check out my gift list: ${list.name}`,
+          url: url,
         })
-      } catch (error) {
-        toast.error("Failed to copy link", {
-          description: "Please try again",
-        })
+        return
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          console.warn("Web Share API failed, falling back to copy", err)
+        } else {
+          return
+        }
       }
+    }
+
+    const success = await copyToClipboard(url)
+    if (success) {
+      toast.success("Link copied!", {
+        description: "Share this link with others",
+      })
+    } else {
+      toast.error("Copy failed", {
+        description: url,
+        duration: 5000,
+        action: {
+          label: "Select URL",
+          onClick: () => {
+            const input = document.createElement("input")
+            input.value = url
+            input.style.position = "fixed"
+            input.style.top = "0"
+            input.style.left = "0"
+            input.style.width = "100%"
+            input.style.height = "100%"
+            input.style.opacity = "0"
+            input.style.pointerEvents = "none"
+            document.body.appendChild(input)
+            input.focus()
+            input.select()
+            if (navigator.userAgent.match(/ipad|iphone/i)) {
+              input.setSelectionRange(0, 999999)
+            }
+            setTimeout(() => {
+              document.body.removeChild(input)
+            }, 100)
+            toast.info("URL selected - tap to paste", {
+              duration: 3000,
+            })
+          },
+        },
+      })
     }
   }
 
@@ -187,36 +281,71 @@ export function GiftLists() {
   return (
     <div className="h-screen flex flex-col">
       <header className="border-b border-border">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-balance">gift0</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Share wishlists with friends</p>
+        <div className="px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden p-2"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-balance">gift0</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 hidden sm:block">Share wishlists with friends</p>
+            </div>
           </div>
-          <Button
-            onClick={() => {
-              setGiftUrl("")
-              setIsCreatingGiftModal(true)
-            }}
-            size="sm"
-            className="gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Gift
-          </Button>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://github.com/crafter-station/gift0"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8 sm:h-9 sm:w-9 p-0"
+              title="View on GitHub"
+            >
+              <Github className="w-4 h-4 sm:w-5 sm:h-5" />
+            </a>
+            <Button
+              onClick={() => {
+                setGiftUrl("")
+                setIsCreatingGiftModal(true)
+              }}
+              size="sm"
+              className="gap-1.5 sm:gap-2 text-xs sm:text-sm shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Add Gift</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          </div>
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        <aside className="w-64 border-r border-border flex flex-col">
-          <div className="p-4 border-b border-border">
+      <div className="flex-1 flex overflow-hidden relative">
+        <aside className={`absolute md:relative inset-y-0 left-0 z-50 md:z-auto w-64 border-r border-border flex flex-col bg-background transition-transform duration-200 ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}>
+          <div className="p-3 sm:p-4 border-b border-border flex items-center justify-between">
             <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Lists</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden p-1"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
           <div className="flex-1 overflow-y-auto">
             {lists.map((list) => (
               <button
                 key={list.id}
-                onClick={() => setActiveList(list.id)}
-                className={`w-full px-4 py-3 text-left border-b border-border hover:bg-accent transition-colors ${
+                onClick={() => {
+                  setActiveList(list.id)
+                  setIsMobileMenuOpen(false)
+                }}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left border-b border-border hover:bg-accent transition-colors touch-manipulation ${
                   activeList === list.id ? "bg-accent" : ""
                 }`}
               >
@@ -232,7 +361,7 @@ export function GiftLists() {
                       e.stopPropagation()
                       handleShareList(list)
                     }}
-                    className="p-1 hover:bg-muted transition-colors cursor-pointer"
+                    className="p-1.5 hover:bg-muted transition-colors cursor-pointer touch-manipulation"
                     title="Copy share link"
                     role="button"
                     tabIndex={0}
@@ -244,51 +373,61 @@ export function GiftLists() {
                       }
                     }}
                   >
-                    <Share2 className="w-3.5 h-3.5" />
+                    <Share2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                   </div>
                 </div>
               </button>
             ))}
           </div>
         </aside>
+        
+        {isMobileMenuOpen && (
+          <div
+            className="fixed inset-0 bg-background/80 z-40 md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
 
         <main className="flex-1 overflow-y-auto">
           {currentList ? (
             <div>
-              <div className="border-b border-border px-6 py-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-xl font-semibold text-balance">{currentList.name}</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
+              <div className="border-b border-border px-3 sm:px-6 py-3 sm:py-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg sm:text-xl font-semibold text-balance">{currentList.name}</h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                       {currentList.gifts?.length || 0} {currentList.gifts?.length === 1 ? "gift" : "gifts"} on this list
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button size="sm" onClick={() => {
                       setGiftUrl("")
                       setIsCreatingGiftModal(true)
-                    }} className="gap-2">
+                    }} className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
                       <Plus className="w-3.5 h-3.5" />
-                      Add Gift
+                      <span className="hidden sm:inline">Add Gift</span>
+                      <span className="sm:hidden">Add</span>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleShareList(currentList)} className="gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleShareList(currentList)} className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
                       <Copy className="w-3.5 h-3.5" />
-                      Copy Link
+                      <span className="hidden sm:inline">Copy Link</span>
+                      <span className="sm:hidden">Link</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleDeleteList(currentList.id)}
-                      className="gap-2 text-destructive hover:text-destructive"
+                      className="gap-1.5 sm:gap-2 text-xs sm:text-sm text-destructive hover:text-destructive"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      Delete
+                      <span className="hidden sm:inline">Delete</span>
+                      <span className="sm:hidden">Del</span>
                     </Button>
                   </div>
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-3 sm:p-6">
                 {currentList.gifts?.length === 0 ? (
                   <div className="border border-dashed border-border p-12 text-center">
                     <p className="text-muted-foreground">No gifts yet. Add your first item to get started.</p>
@@ -305,16 +444,16 @@ export function GiftLists() {
                     {(currentList.gifts || []).map((gift: Gift) => (
                       <div
                         key={gift.id}
-                        className="bg-card p-4 flex items-start gap-4 hover:bg-accent transition-colors group"
+                        className="bg-card p-3 sm:p-4 flex items-start gap-3 sm:gap-4 hover:bg-accent transition-colors group"
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start justify-between gap-3 sm:gap-4">
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-medium text-balance">{gift.name}</h3>
-                              {gift.price && <p className="text-sm text-muted-foreground mt-1">{gift.price}</p>}
+                              <h3 className="text-sm sm:text-base font-medium text-balance leading-tight">{gift.name}</h3>
+                              {gift.price && <p className="text-xs sm:text-sm text-muted-foreground mt-1">{gift.price}</p>}
                               <div className="flex items-center gap-2 mt-2">
                                 <span
-                                  className={`text-xs font-mono px-2 py-0.5 border ${
+                                  className={`text-xs font-mono px-1.5 sm:px-2 py-0.5 border ${
                                     gift.priority === "high"
                                       ? "border-foreground text-foreground"
                                       : gift.priority === "medium"
@@ -326,22 +465,24 @@ export function GiftLists() {
                                 </span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 sm:gap-1 shrink-0">
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => window.open(gift.url, "_blank")}
-                                className="gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="gap-1 sm:gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-2 touch-manipulation"
+                                title="Open link"
                               >
-                                <ExternalLink className="w-3.5 h-3.5" />
+                                <ExternalLink className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteGift(gift.id)}
-                                className="gap-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                                className="gap-1 sm:gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive p-2 touch-manipulation"
+                                title="Delete gift"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                               </Button>
                             </div>
                           </div>
@@ -377,12 +518,12 @@ export function GiftLists() {
       </div>
 
       {isCreatingGiftModal && (
-        <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-card border border-border w-full max-w-md">
-            <div className="border-b border-border p-4">
-              <h3 className="font-semibold">Add Gift</h3>
+        <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-card border border-border w-full max-w-md max-h-[90vh] flex flex-col">
+            <div className="border-b border-border p-3 sm:p-4 shrink-0">
+              <h3 className="text-base sm:text-lg font-semibold">Add Gift</h3>
             </div>
-            <div className="p-4 space-y-4">
+            <div className="p-3 sm:p-4 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label htmlFor="giftUrlInput" className="text-sm text-muted-foreground block mb-2">
                   Product URL{parseUrls(giftUrl).length > 1 ? `s (${parseUrls(giftUrl).length})` : ""}
@@ -412,7 +553,7 @@ export function GiftLists() {
                 </div>
               )}
             </div>
-            <div className="border-t border-border p-4 flex justify-end gap-2">
+            <div className="border-t border-border p-3 sm:p-4 flex justify-end gap-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -421,6 +562,7 @@ export function GiftLists() {
                   setGiftUrl("")
                 }}
                 disabled={isCreatingGiftFromUrl || isCreatingGiftsFromUrls}
+                className="text-xs sm:text-sm touch-manipulation"
               >
                 Cancel
               </Button>
@@ -428,6 +570,7 @@ export function GiftLists() {
                 size="sm"
                 onClick={handleCreateGiftFromUrl}
                 disabled={(isCreatingGiftFromUrl || isCreatingGiftsFromUrls || processingUrls.length > 0) || !giftUrl.trim()}
+                className="text-xs sm:text-sm touch-manipulation"
               >
                 {(isCreatingGiftFromUrl || isCreatingGiftsFromUrls || processingUrls.length > 0) ? `Creating... (${completedUrls.size}/${processingUrls.length || 1})` : "Add Gift"}
               </Button>
@@ -435,6 +578,23 @@ export function GiftLists() {
           </div>
         </div>
       )}
+      
+      <footer className="border-t border-border py-3 px-3 sm:px-6">
+        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <span>Made with</span>
+          <Heart className="w-3.5 h-3.5 fill-[#F8BC31] text-[#F8BC31]" />
+          <span>by</span>
+          <a
+            href="https://crafter.station"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+          >
+            <CrafterStationLogo className="w-4 h-4" />
+            <span className="font-medium">Crafter Station</span>
+          </a>
+        </div>
+      </footer>
     </div>
   )
 }
