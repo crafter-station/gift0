@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { notFound } from "next/navigation"
-import { ExternalLink, Check, Heart, Github } from "lucide-react"
+import { ExternalLink, Check, Heart } from "lucide-react"
 import { getListByShareToken } from "@/app/actions/lists"
 import { toggleGiftPurchasedPublic } from "@/app/actions/gifts"
 import { toast } from "sonner"
@@ -216,16 +216,6 @@ export default function SharedListContent({ token }: { token: string }) {
                 <span className="font-medium">Crafter Station</span>
               </a>
             </div>
-            <span className="hidden sm:inline">•</span>
-            <a
-              href="https://github.com/crafter-station/gift0"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
-            >
-              <Github className="w-3.5 h-3.5" />
-              {/* <span>View on GitHub</span> */}
-            </a>
           </div>
         </div>
       </footer>

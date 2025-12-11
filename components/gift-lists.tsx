@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, ExternalLink, Copy, Trash2, Share2, Menu, X, Github, Heart, Pencil, Check } from "lucide-react"
+import { Plus, ExternalLink, Copy, Trash2, Share2, Menu, X, Heart, Pencil, Check } from "lucide-react"
 import { CrafterStationLogo } from "@/components/logos/crafter-station"
 import { toast } from "sonner"
 import { useLists } from "@/lib/hooks/use-lists"
@@ -392,17 +392,6 @@ export function GiftLists() {
                 <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 hidden sm:block leading-tight translate-y-[10px]">Share wishlists with friends</p>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <a
-              href="https://github.com/crafter-station/gift0"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8 sm:h-9 sm:w-9 p-0"
-              title="View on GitHub"
-            >
-              <Github className="w-4 h-4 sm:w-5 sm:h-5" />
-            </a>
           </div>
         </div>
       </header>

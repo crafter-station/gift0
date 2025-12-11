@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "sonner"
 import { QueryProvider } from "@/lib/providers/query-provider"
+import { GithubBadge } from "@/components/github-badge"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -62,6 +63,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`font-sans antialiased`}>
         <QueryProvider>
+          <GithubBadge />
           {children}
         </QueryProvider>
         <Toaster />
