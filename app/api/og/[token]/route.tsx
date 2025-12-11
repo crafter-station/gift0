@@ -1,7 +1,19 @@
 import { ImageResponse } from "@vercel/og"
-import { getListByShareToken } from "@/app/actions/lists"
+import { db } from "@/lib/db"
+import { giftLists } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 
 export const runtime = "nodejs"
+
+async function getListForOG(shareToken: string) {
+  const list = await db.query.giftLists.findFirst({
+    where: eq(giftLists.shareToken, shareToken),
+    with: {
+      gifts: true,
+    },
+  })
+  return list
+}
 
 export async function GET(
   request: Request,
@@ -10,7 +22,7 @@ export async function GET(
   const { token } = await params
 
   try {
-    const list = await getListByShareToken(token)
+    const list = await getListForOG(token)
 
     if (!list) {
       return new Response("List not found", { status: 404 })
