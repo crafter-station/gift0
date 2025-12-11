@@ -9,6 +9,7 @@ import { CrafterStationLogo } from "@/components/logos/crafter-station"
 import { toast } from "sonner"
 import { useLists } from "@/lib/hooks/use-lists"
 import type { GiftListWithGifts, Gift } from "@/lib/db/schema"
+import { getPriorityLabel } from "@/lib/utils"
 
 export function GiftLists() {
   const queryClient = useQueryClient()
@@ -595,7 +596,7 @@ export function GiftLists() {
                               )}
                               <div className="flex items-center gap-2 mt-2">
                                 <span
-                                  className={`text-xs font-mono px-1.5 sm:px-2 py-0.5 border ${
+                                  className={`text-xs px-1.5 sm:px-2 py-0.5 border rounded ${
                                     gift.purchased
                                       ? "border-muted-foreground/50 text-muted-foreground/50"
                                       : gift.priority === "high"
@@ -605,7 +606,7 @@ export function GiftLists() {
                                           : "border-border text-muted-foreground"
                                   }`}
                                 >
-                                  {gift.priority}
+                                  {getPriorityLabel(gift.priority)}
                                 </span>
                                 {gift.purchased && (
                                   <span className="text-xs text-muted-foreground/70">Purchased</span>
@@ -726,9 +727,9 @@ export function GiftLists() {
                   onChange={(e) => setEditingGift({ ...editingGift, priority: e.target.value as "high" | "medium" | "low" })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
+                  <option value="low">{getPriorityLabel("low")}</option>
+                  <option value="medium">{getPriorityLabel("medium")}</option>
+                  <option value="high">{getPriorityLabel("high")}</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">

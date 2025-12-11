@@ -15,7 +15,8 @@ Rules:
 - If price is mentioned, extract it in format like "$99.99" or "99.99"
 - Determine priority: "high" for expensive items ($200+), "medium" for mid-range ($50-200), "low" for affordable (<$50)
 - Suggest a concise, meaningful list name (2-4 words) that fits the product category
-- List names should be shareable and clear (e.g., "Birthday 2025", "Tech Wishlist", "Holiday Gifts")`;
+- List names should be shareable and clear (e.g., "Birthday 2025", "Tech Wishlist", "Holiday Gifts")
+- Priority labels: "low" = Almost Free, "medium" = Budget Friendly, "high" = For When You Feel Rich`;
 
 async function fetchUrlContent(url: string): Promise<string> {
   const apiKey = process.env.FIRECRAWL_API_KEY;

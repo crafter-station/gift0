@@ -9,6 +9,7 @@ import { getListByShareToken } from "@/app/actions/lists"
 import { toggleGiftPurchasedPublic } from "@/app/actions/gifts"
 import { toast } from "sonner"
 import type { GiftListWithOwner } from "@/lib/db/schema"
+import { getPriorityLabel } from "@/lib/utils"
 
 function SharedListContent({ token }: { token: string }) {
   const queryClient = useQueryClient()
@@ -122,7 +123,7 @@ function SharedListContent({ token }: { token: string }) {
                         </span>
                       )}
                       <span
-                        className={`text-xs font-mono px-1.5 py-0.5 border rounded ${
+                        className={`text-xs px-1.5 py-0.5 border rounded ${
                           gift.purchased
                             ? "border-muted-foreground/50 text-muted-foreground/50"
                             : gift.priority === "high"
@@ -132,7 +133,7 @@ function SharedListContent({ token }: { token: string }) {
                                 : "border-border text-muted-foreground"
                         }`}
                       >
-                        {gift.priority}
+                        {getPriorityLabel(gift.priority)}
                       </span>
                       {gift.purchased && (
                         <span className="text-xs text-muted-foreground/70">Purchased</span>
