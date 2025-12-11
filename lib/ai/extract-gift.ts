@@ -12,11 +12,16 @@ const SYSTEM_PROMPT = `You are a helpful assistant that extracts product informa
 
 Rules:
 - Extract the product name accurately from the page content
-- If price is mentioned, extract it in format like "$99.99" or "99.99"
-- Determine priority based on price:
-  * "low" (Almost Free): Items under $50 - affordable, budget-friendly gifts
-  * "medium" (Budget Friendly): Items $50-$200 - mid-range, reasonable purchases
-  * "high" (Financial Regret): Items $200+ - expensive, splurge-worthy items
+- If price is mentioned, extract it with its currency symbol (e.g., "$99.99", "€50.00", "£45.99", "¥5,000", "CAD$100", "S/180.50")
+- Determine priority based on price and currency, using appropriate thresholds for each currency:
+  * USD ($): "low" under $50, "medium" $50-$200, "high" $200+
+  * EUR (€): "low" under €45, "medium" €45-€180, "high" €180+
+  * GBP (£): "low" under £40, "medium" £40-£160, "high" £160+
+  * JPY (¥): "low" under ¥7,500, "medium" ¥7,500-¥30,000, "high" ¥30,000+
+  * CAD (C$): "low" under C$65, "medium" C$65-C$270, "high" C$270+
+  * AUD (A$): "low" under A$75, "medium" A$75-A$300, "high" A$300+
+  * PEN (S/): "low" under S/180, "medium" S/180-S/720, "high" S/720+
+  * For other currencies, use equivalent purchasing power thresholds relative to USD
 - Suggest a concise, meaningful list name (2-4 words) that fits the product category
 - List names should be shareable and clear (e.g., "Birthday 2025", "Tech Wishlist", "Holiday Gifts")`;
 
