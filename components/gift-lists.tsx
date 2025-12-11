@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, ExternalLink, Copy, Trash2, Share2, Menu, X, Github, Heart } from "lucide-react"
+import { Plus, ExternalLink, Copy, Trash2, Share2, Menu, X, Github, Heart, Pencil, Check } from "lucide-react"
 import { CrafterStationLogo } from "@/components/logos/crafter-station"
 import { toast } from "sonner"
 import { useLists } from "@/lib/hooks/use-lists"
@@ -17,7 +17,10 @@ export function GiftLists() {
     isLoading,
     fingerprintId,
     deleteList,
+    updateListName,
     deleteGift,
+    updateGift,
+    toggleGiftPurchased,
     createGiftFromUrl,
     createGiftsFromUrls,
     isCreatingGiftFromUrl,
@@ -32,6 +35,10 @@ export function GiftLists() {
   const [isCreatingGiftModal, setIsCreatingGiftModal] = useState(false)
   const [giftUrl, setGiftUrl] = useState("")
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [editingListId, setEditingListId] = useState<string | null>(null)
+  const [editingListName, setEditingListName] = useState("")
+  const [editingGiftId, setEditingGiftId] = useState<string | null>(null)
+  const [editingGift, setEditingGift] = useState<Partial<Gift> | null>(null)
 
   useEffect(() => {
     if (lists.length > 0 && !activeList) {
@@ -164,6 +171,71 @@ export function GiftLists() {
 
   const handleDeleteGift = (giftId: string) => {
     deleteGift(giftId)
+  }
+
+  const handleEditListName = (list: GiftListWithGifts) => {
+    setEditingListId(list.id)
+    setEditingListName(list.name)
+  }
+
+  const handleSaveListName = () => {
+    if (!editingListId || !editingListName.trim()) return
+    
+    updateListName(
+      { listId: editingListId, name: editingListName.trim() },
+      {
+        onSuccess: () => {
+          setEditingListId(null)
+          setEditingListName("")
+          toast.success("List name updated")
+        },
+        onError: (error) => {
+          toast.error("Failed to update list name", {
+            description: error.message || "Please try again",
+          })
+        },
+      }
+    )
+  }
+
+  const handleEditGift = (gift: Gift) => {
+    setEditingGiftId(gift.id)
+    setEditingGift({
+      name: gift.name,
+      url: gift.url,
+      price: gift.price || "",
+      priority: gift.priority,
+      purchased: gift.purchased,
+    })
+  }
+
+  const handleSaveGift = () => {
+    if (!editingGiftId || !editingGift) return
+    
+    updateGift(
+      {
+        giftId: editingGiftId,
+        data: {
+          name: editingGift.name,
+          url: editingGift.url,
+          price: editingGift.price || undefined,
+          priority: editingGift.priority,
+          purchased: editingGift.purchased,
+        },
+      },
+      {
+        onSuccess: () => {
+          setEditingGiftId(null)
+          setEditingGift(null)
+          toast.success("Gift updated")
+        },
+        onError: (error) => {
+          toast.error("Failed to update gift", {
+            description: error.message || "Please try again",
+          })
+        },
+      }
+    )
   }
 
   const parseUrls = (input: string): string[] => {
@@ -394,7 +466,54 @@ export function GiftLists() {
               <div className="border-b border-border px-3 sm:px-6 py-3 sm:py-4">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-lg sm:text-xl font-semibold text-balance">{currentList.name}</h2>
+                    {editingListId === currentList.id ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={editingListName}
+                          onChange={(e) => setEditingListName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveListName()
+                            if (e.key === "Escape") {
+                              setEditingListId(null)
+                              setEditingListName("")
+                            }
+                          }}
+                          className="text-lg sm:text-xl font-semibold h-auto py-1"
+                          autoFocus
+                        />
+                        <Button
+                          size="sm"
+                          onClick={handleSaveListName}
+                          className="h-8"
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingListId(null)
+                            setEditingListName("")
+                          }}
+                          className="h-8"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg sm:text-xl font-semibold text-balance">{currentList.name}</h2>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditListName(currentList)}
+                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                          title="Edit list name"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
                     <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                       {currentList.gifts?.length || 0} {currentList.gifts?.length === 1 ? "gift" : "gifts"} on this list
                     </p>
@@ -444,25 +563,53 @@ export function GiftLists() {
                     {(currentList.gifts || []).map((gift: Gift) => (
                       <div
                         key={gift.id}
-                        className="bg-card p-3 sm:p-4 flex items-start gap-3 sm:gap-4 hover:bg-accent transition-colors group"
+                        className={`bg-card p-3 sm:p-4 flex items-start gap-3 sm:gap-4 hover:bg-accent transition-colors group ${
+                          gift.purchased ? "opacity-60" : ""
+                        }`}
                       >
+                        <button
+                          onClick={() => toggleGiftPurchased(gift.id)}
+                          className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors touch-manipulation ${
+                            gift.purchased
+                              ? "bg-primary border-primary text-primary-foreground"
+                              : "border-border hover:border-primary/50"
+                          }`}
+                          title={gift.purchased ? "Mark as not purchased" : "Mark as purchased"}
+                        >
+                          {gift.purchased && <Check className="w-3 h-3" />}
+                        </button>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-3 sm:gap-4">
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-sm sm:text-base font-medium text-balance leading-tight">{gift.name}</h3>
-                              {gift.price && <p className="text-xs sm:text-sm text-muted-foreground mt-1">{gift.price}</p>}
+                              <h3 className={`text-sm sm:text-base font-medium text-balance leading-tight ${
+                                gift.purchased ? "line-through text-muted-foreground" : ""
+                              }`}>
+                                {gift.name}
+                              </h3>
+                              {gift.price && (
+                                <p className={`text-xs sm:text-sm text-muted-foreground mt-1 ${
+                                  gift.purchased ? "line-through" : ""
+                                }`}>
+                                  {gift.price}
+                                </p>
+                              )}
                               <div className="flex items-center gap-2 mt-2">
                                 <span
                                   className={`text-xs font-mono px-1.5 sm:px-2 py-0.5 border ${
-                                    gift.priority === "high"
-                                      ? "border-foreground text-foreground"
-                                      : gift.priority === "medium"
-                                        ? "border-muted-foreground text-muted-foreground"
-                                        : "border-border text-muted-foreground"
+                                    gift.purchased
+                                      ? "border-muted-foreground/50 text-muted-foreground/50"
+                                      : gift.priority === "high"
+                                        ? "border-foreground text-foreground"
+                                        : gift.priority === "medium"
+                                          ? "border-muted-foreground text-muted-foreground"
+                                          : "border-border text-muted-foreground"
                                   }`}
                                 >
                                   {gift.priority}
                                 </span>
+                                {gift.purchased && (
+                                  <span className="text-xs text-muted-foreground/70">Purchased</span>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center gap-1 sm:gap-1 shrink-0">
@@ -474,6 +621,15 @@ export function GiftLists() {
                                 title="Open link"
                               >
                                 <ExternalLink className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditGift(gift)}
+                                className="gap-1 sm:gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-2 touch-manipulation"
+                                title="Edit gift"
+                              >
+                                <Pencil className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -516,6 +672,102 @@ export function GiftLists() {
           )}
         </main>
       </div>
+
+      {editingGiftId && editingGift && (
+        <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-card border border-border w-full max-w-md max-h-[90vh] flex flex-col">
+            <div className="border-b border-border p-3 sm:p-4 shrink-0">
+              <h3 className="text-base sm:text-lg font-semibold">Edit Gift</h3>
+            </div>
+            <div className="p-3 sm:p-4 space-y-4 overflow-y-auto flex-1">
+              <div>
+                <label htmlFor="editGiftName" className="text-sm text-muted-foreground block mb-2">
+                  Name
+                </label>
+                <Input
+                  id="editGiftName"
+                  value={editingGift.name || ""}
+                  onChange={(e) => setEditingGift({ ...editingGift, name: e.target.value })}
+                  placeholder="Product name"
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label htmlFor="editGiftUrl" className="text-sm text-muted-foreground block mb-2">
+                  URL
+                </label>
+                <Input
+                  id="editGiftUrl"
+                  value={editingGift.url || ""}
+                  onChange={(e) => setEditingGift({ ...editingGift, url: e.target.value })}
+                  placeholder="https://example.com/product"
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label htmlFor="editGiftPrice" className="text-sm text-muted-foreground block mb-2">
+                  Price (optional)
+                </label>
+                <Input
+                  id="editGiftPrice"
+                  value={editingGift.price || ""}
+                  onChange={(e) => setEditingGift({ ...editingGift, price: e.target.value })}
+                  placeholder="$99.99"
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label htmlFor="editGiftPriority" className="text-sm text-muted-foreground block mb-2">
+                  Priority
+                </label>
+                <select
+                  id="editGiftPriority"
+                  value={editingGift.priority || "medium"}
+                  onChange={(e) => setEditingGift({ ...editingGift, priority: e.target.value as "high" | "medium" | "low" })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="editGiftPurchased"
+                  checked={editingGift.purchased || false}
+                  onChange={(e) => setEditingGift({ ...editingGift, purchased: e.target.checked })}
+                  className="w-4 h-4 rounded border-border"
+                />
+                <label htmlFor="editGiftPurchased" className="text-sm text-muted-foreground cursor-pointer">
+                  Mark as purchased
+                </label>
+              </div>
+            </div>
+            <div className="border-t border-border p-3 sm:p-4 flex justify-end gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEditingGiftId(null)
+                  setEditingGift(null)
+                }}
+                className="text-xs sm:text-sm touch-manipulation"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveGift}
+                disabled={!editingGift.name?.trim() || !editingGift.url?.trim()}
+                className="text-xs sm:text-sm touch-manipulation"
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isCreatingGiftModal && (
         <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-3 sm:p-4 z-50">
