@@ -395,9 +395,9 @@ export function useLists() {
   });
 
   const createGiftFromUrlMutation = useMutation({
-    mutationFn: async ({ url, listId }: { url: string; listId?: string }) => {
+    mutationFn: async ({ url, listId, forceNewList }: { url: string; listId?: string; forceNewList?: boolean }) => {
       if (!fingerprintId) throw new Error("No fingerprint");
-      return await createGiftFromUrl(fingerprintId, url, listId);
+      return await createGiftFromUrl(fingerprintId, url, listId, forceNewList);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [LISTS_QUERY_KEY, fingerprintId] });
@@ -405,9 +405,9 @@ export function useLists() {
   });
 
   const createGiftsFromUrlsMutation = useMutation({
-    mutationFn: async ({ urls, listId }: { urls: string[]; listId?: string }) => {
+    mutationFn: async ({ urls, listId, forceNewList }: { urls: string[]; listId?: string; forceNewList?: boolean }) => {
       if (!fingerprintId) throw new Error("No fingerprint");
-      return await createGiftsFromUrls(fingerprintId, urls, listId);
+      return await createGiftsFromUrls(fingerprintId, urls, listId, forceNewList);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [LISTS_QUERY_KEY, fingerprintId] });
@@ -425,8 +425,8 @@ export function useLists() {
     updateGift: updateGiftMutation.mutate,
     toggleGiftPurchased: toggleGiftPurchasedMutation.mutate,
     deleteGift: deleteGiftMutation.mutate,
-    createGiftFromUrl: (params: { url: string; listId?: string }, options?: any) => createGiftFromUrlMutation.mutate(params, options),
-    createGiftsFromUrls: (params: { urls: string[]; listId?: string }, options?: any) => createGiftsFromUrlsMutation.mutate(params, options),
+    createGiftFromUrl: (params: { url: string; listId?: string; forceNewList?: boolean }, options?: any) => createGiftFromUrlMutation.mutate(params, options),
+    createGiftsFromUrls: (params: { urls: string[]; listId?: string; forceNewList?: boolean }, options?: any) => createGiftsFromUrlsMutation.mutate(params, options),
     isCreatingList: createListMutation.isPending,
     isDeletingList: deleteListMutation.isPending,
     isUpdatingListName: updateListNameMutation.isPending,

@@ -9,6 +9,7 @@ export async function createGiftFromUrl(
   fingerprintId: string,
   url: string,
   listId?: string,
+  forceNewList?: boolean,
 ) {
   const extracted = await extractGiftFromUrl(url);
 
@@ -18,6 +19,11 @@ export async function createGiftFromUrl(
   if (listId) {
     // Use the provided list ID
     targetListId = listId;
+  } else if (forceNewList) {
+    // Force create a new list
+    const newList = await createList(fingerprintId, extracted.listName);
+    targetListId = newList.id;
+    isNewList = true;
   } else {
     // Auto-create logic: only when user has no lists
     const existingLists = await getListsByOwner(fingerprintId);
@@ -60,6 +66,7 @@ export async function createGiftsFromUrls(
   fingerprintId: string,
   urls: string[],
   listId?: string,
+  forceNewList?: boolean,
 ) {
   if (urls.length === 0) {
     throw new Error("No URLs provided");
@@ -77,6 +84,12 @@ export async function createGiftsFromUrls(
   if (listId) {
     // Use the provided list ID
     targetListId = listId;
+  } else if (forceNewList) {
+    // Force create a new list
+    const firstExtracted = await extractGiftFromUrl(urls[0]);
+    const newList = await createList(fingerprintId, firstExtracted.listName);
+    targetListId = newList.id;
+    isNewList = true;
   } else {
     // Auto-create logic: only when user has no lists
     const existingLists = await getListsByOwner(fingerprintId);
