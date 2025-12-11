@@ -8,25 +8,41 @@ import { extractGiftFromUrl } from "@/lib/ai/extract-gift";
 export async function createGiftFromUrl(
   fingerprintId: string,
   url: string,
+  listId?: string,
 ) {
   const extracted = await extractGiftFromUrl(url);
 
-  let listId: string;
+  let targetListId: string;
+  let isNewList = false;
   
-  const existingLists = await getListsByOwner(fingerprintId);
-  
-  const existingList = existingLists.lists.find(
-    (list) => list.name === extracted.listName
-  );
-
-  if (existingList) {
-    listId = existingList.id;
+  if (listId) {
+    // Use the provided list ID
+    targetListId = listId;
   } else {
-    const newList = await createList(fingerprintId, extracted.listName);
-    listId = newList.id;
+    // Auto-create logic: only when user has no lists
+    const existingLists = await getListsByOwner(fingerprintId);
+    
+    if (existingLists.lists.length === 0) {
+      // First time user - create new list
+      const newList = await createList(fingerprintId, extracted.listName);
+      targetListId = newList.id;
+      isNewList = true;
+    } else {
+      // User has lists - find by name or use first list
+      const existingList = existingLists.lists.find(
+        (list) => list.name === extracted.listName
+      );
+
+      if (existingList) {
+        targetListId = existingList.id;
+      } else {
+        // Use first list if name doesn't match
+        targetListId = existingLists.lists[0].id;
+      }
+    }
   }
 
-  const gift = await addGift(listId, fingerprintId, {
+  const gift = await addGift(targetListId, fingerprintId, {
     name: extracted.name,
     url: extracted.url,
     price: extracted.price,
@@ -34,24 +50,23 @@ export async function createGiftFromUrl(
   });
 
   return {
-    listId,
+    listId: targetListId,
     gift,
-    isNewList: !existingList,
+    isNewList,
   };
 }
 
 export async function createGiftsFromUrls(
   fingerprintId: string,
   urls: string[],
+  listId?: string,
 ) {
   if (urls.length === 0) {
     throw new Error("No URLs provided");
   }
 
-  const existingLists = await getListsByOwner(fingerprintId);
-  
-  let listId: string | null = null;
-  let listName: string | null = null;
+  let targetListId: string | null = null;
+  let isNewList = false;
   const results: Array<{
     success: boolean;
     gift?: any;
@@ -59,25 +74,30 @@ export async function createGiftsFromUrls(
     url: string;
   }> = [];
 
+  if (listId) {
+    // Use the provided list ID
+    targetListId = listId;
+  } else {
+    // Auto-create logic: only when user has no lists
+    const existingLists = await getListsByOwner(fingerprintId);
+    
+    if (existingLists.lists.length === 0) {
+      // First time user - extract first URL to get list name
+      const firstExtracted = await extractGiftFromUrl(urls[0]);
+      const newList = await createList(fingerprintId, firstExtracted.listName);
+      targetListId = newList.id;
+      isNewList = true;
+    } else {
+      // User has lists - use first list
+      targetListId = existingLists.lists[0].id;
+    }
+  }
+
   for (const url of urls) {
     try {
       const extracted = await extractGiftFromUrl(url);
-      
-      if (!listName) {
-        listName = extracted.listName;
-        const existingList = existingLists.lists.find(
-          (list) => list.name === listName
-        );
 
-        if (existingList) {
-          listId = existingList.id;
-        } else {
-          const newList = await createList(fingerprintId, listName);
-          listId = newList.id;
-        }
-      }
-
-      const gift = await addGift(listId!, fingerprintId, {
+      const gift = await addGift(targetListId!, fingerprintId, {
         name: extracted.name,
         url: extracted.url,
         price: extracted.price,
@@ -98,10 +118,13 @@ export async function createGiftsFromUrls(
     }
   }
 
+  const existingLists = await getListsByOwner(fingerprintId);
+  const finalList = existingLists.lists.find((l) => l.id === targetListId);
+
   return {
-    listId: listId!,
-    listName: listName!,
+    listId: targetListId!,
+    listName: finalList?.name || "",
     results,
-    isNewList: !existingLists.lists.find((l) => l.name === listName),
+    isNewList,
   };
 }

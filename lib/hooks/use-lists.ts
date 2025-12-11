@@ -395,9 +395,9 @@ export function useLists() {
   });
 
   const createGiftFromUrlMutation = useMutation({
-    mutationFn: async (url: string) => {
+    mutationFn: async ({ url, listId }: { url: string; listId?: string }) => {
       if (!fingerprintId) throw new Error("No fingerprint");
-      return await createGiftFromUrl(fingerprintId, url);
+      return await createGiftFromUrl(fingerprintId, url, listId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [LISTS_QUERY_KEY, fingerprintId] });
@@ -405,9 +405,9 @@ export function useLists() {
   });
 
   const createGiftsFromUrlsMutation = useMutation({
-    mutationFn: async (urls: string[]) => {
+    mutationFn: async ({ urls, listId }: { urls: string[]; listId?: string }) => {
       if (!fingerprintId) throw new Error("No fingerprint");
-      return await createGiftsFromUrls(fingerprintId, urls);
+      return await createGiftsFromUrls(fingerprintId, urls, listId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [LISTS_QUERY_KEY, fingerprintId] });
@@ -425,8 +425,8 @@ export function useLists() {
     updateGift: updateGiftMutation.mutate,
     toggleGiftPurchased: toggleGiftPurchasedMutation.mutate,
     deleteGift: deleteGiftMutation.mutate,
-    createGiftFromUrl: createGiftFromUrlMutation.mutate,
-    createGiftsFromUrls: createGiftsFromUrlsMutation.mutate,
+    createGiftFromUrl: (params: { url: string; listId?: string }, options?: any) => createGiftFromUrlMutation.mutate(params, options),
+    createGiftsFromUrls: (params: { urls: string[]; listId?: string }, options?: any) => createGiftsFromUrlsMutation.mutate(params, options),
     isCreatingList: createListMutation.isPending,
     isDeletingList: deleteListMutation.isPending,
     isUpdatingListName: updateListNameMutation.isPending,

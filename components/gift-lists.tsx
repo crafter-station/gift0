@@ -266,8 +266,8 @@ export function GiftLists() {
     }
 
     if (urls.length === 1) {
-      createGiftFromUrl(urls[0], {
-        onSuccess: (result) => {
+      createGiftFromUrl({ url: urls[0], listId: activeList || undefined }, {
+        onSuccess: (result: { listId: string; gift: any; isNewList: boolean }) => {
           setTimeout(() => {
             const updatedData = queryClient.getQueryData<{
               lists: GiftListWithGifts[];
@@ -286,7 +286,7 @@ export function GiftLists() {
           setGiftUrl("")
           setIsCreatingGiftModal(false)
         },
-        onError: (error) => {
+        onError: (error: Error) => {
           toast.error("Failed to create gift", {
             description: error.message || "Please try again",
           })
@@ -297,8 +297,8 @@ export function GiftLists() {
       setCompletedUrls(new Set())
       setFailedUrls(new Set())
 
-      createGiftsFromUrls(urls, {
-        onSuccess: (result) => {
+      createGiftsFromUrls({ urls, listId: activeList || undefined }, {
+        onSuccess: (result: { listId: string; listName: string; results: Array<{ success: boolean; gift?: any; error?: string; url: string }>; isNewList: boolean }) => {
           const successCount = result.results.filter((r) => r.success).length
           const errorCount = result.results.filter((r) => !r.success).length
 
@@ -330,7 +330,7 @@ export function GiftLists() {
           setCompletedUrls(new Set())
           setFailedUrls(new Set())
         },
-        onError: (error) => {
+        onError: (error: Error) => {
           toast.error("Failed to create gifts", {
             description: error.message || "Please try again",
           })
