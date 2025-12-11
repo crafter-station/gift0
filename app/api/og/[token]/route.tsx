@@ -1,7 +1,7 @@
 import { ImageResponse } from "@vercel/og"
 import { getListByShareToken } from "@/app/actions/lists"
 
-export const runtime = "edge"
+export const runtime = "nodejs"
 
 export async function GET(
   request: Request,
@@ -77,10 +77,21 @@ export async function GET(
       {
         width: 1200,
         height: 630,
+        headers: {
+          "Content-Type": "image/png",
+          "Cache-Control": "public, max-age=3600, s-maxage=3600",
+        },
       }
     )
   } catch (error) {
     console.error("Error generating OG image:", error)
-    return new Response("Failed to generate image", { status: 500 })
+    
+    // Fallback: redirect to static OG image
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+    const fallbackUrl = new URL("/og.png", baseUrl).toString()
+    
+    return Response.redirect(fallbackUrl, 302)
   }
 }
