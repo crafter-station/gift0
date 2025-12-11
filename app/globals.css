@@ -130,3 +130,18 @@
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+@keyframes heart-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+.heart-pulse {
+  animation: heart-pulse 1.5s ease-in-out infinite;
+}

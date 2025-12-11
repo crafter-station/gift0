@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { useLists } from "@/lib/hooks/use-lists"
 import type { GiftListWithGifts, Gift } from "@/lib/db/schema"
 import { getPriorityLabel } from "@/lib/utils"
+import Image from "next/image"
 
 export function GiftLists() {
   const queryClient = useQueryClient()
@@ -364,9 +365,19 @@ export function GiftLists() {
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-balance">gift0</h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 hidden sm:block">Share wishlists with friends</p>
+            <div className="flex items-center gap-2.5">
+              <Image
+                src="/gift0_logo.png"
+                alt="gift0"
+                width={32}
+                height={32}
+                className="w-6 h-6 sm:w-8 sm:h-8 shrink-0"
+                priority
+              />
+              <div className="flex flex-col">
+                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-balance leading-none translate-y-[10px]">gift0</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 hidden sm:block leading-tight translate-y-[10px]">Share wishlists with friends</p>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -835,7 +846,7 @@ export function GiftLists() {
       <footer className="border-t border-border py-3 px-3 sm:px-6">
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <span>Made with</span>
-          <Heart className="w-3.5 h-3.5 fill-[#F8BC31] text-[#F8BC31]" />
+          <Heart className="w-3.5 h-3.5 fill-[#F8BC31] text-[#F8BC31] heart-pulse" />
           <span>by</span>
           <a
             href="https://www.crafterstation.com/"

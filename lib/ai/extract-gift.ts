@@ -13,10 +13,12 @@ const SYSTEM_PROMPT = `You are a helpful assistant that extracts product informa
 Rules:
 - Extract the product name accurately from the page content
 - If price is mentioned, extract it in format like "$99.99" or "99.99"
-- Determine priority: "high" for expensive items ($200+), "medium" for mid-range ($50-200), "low" for affordable (<$50)
+- Determine priority based on price:
+  * "low" (Almost Free): Items under $50 - affordable, budget-friendly gifts
+  * "medium" (Budget Friendly): Items $50-$200 - mid-range, reasonable purchases
+  * "high" (Financial Regret): Items $200+ - expensive, splurge-worthy items
 - Suggest a concise, meaningful list name (2-4 words) that fits the product category
-- List names should be shareable and clear (e.g., "Birthday 2025", "Tech Wishlist", "Holiday Gifts")
-- Priority labels: "low" = Almost Free, "medium" = Budget Friendly, "high" = For When You Feel Rich`;
+- List names should be shareable and clear (e.g., "Birthday 2025", "Tech Wishlist", "Holiday Gifts")`;
 
 async function fetchUrlContent(url: string): Promise<string> {
   const apiKey = process.env.FIRECRAWL_API_KEY;
