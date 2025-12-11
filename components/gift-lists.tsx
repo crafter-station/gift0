@@ -41,6 +41,7 @@ export function GiftLists() {
   const [editingListName, setEditingListName] = useState("")
   const [editingGiftId, setEditingGiftId] = useState<string | null>(null)
   const [editingGift, setEditingGift] = useState<Partial<Gift> | null>(null)
+  const [isCreatingNewList, setIsCreatingNewList] = useState(false)
 
   useEffect(() => {
     if (lists.length > 0 && !activeList) {
@@ -266,7 +267,11 @@ export function GiftLists() {
     }
 
     if (urls.length === 1) {
-      createGiftFromUrl({ url: urls[0], listId: activeList || undefined }, {
+      createGiftFromUrl({ 
+        url: urls[0], 
+        listId: isCreatingNewList ? undefined : (activeList || undefined),
+        forceNewList: isCreatingNewList,
+      }, {
         onSuccess: (result: { listId: string; gift: any; isNewList: boolean }) => {
           setTimeout(() => {
             const updatedData = queryClient.getQueryData<{
@@ -285,11 +290,13 @@ export function GiftLists() {
           }, 100)
           setGiftUrl("")
           setIsCreatingGiftModal(false)
+          setIsCreatingNewList(false)
         },
         onError: (error: Error) => {
           toast.error("Failed to create gift", {
             description: error.message || "Please try again",
           })
+          setIsCreatingNewList(false)
         },
       })
     } else {
@@ -297,7 +304,11 @@ export function GiftLists() {
       setCompletedUrls(new Set())
       setFailedUrls(new Set())
 
-      createGiftsFromUrls({ urls, listId: activeList || undefined }, {
+      createGiftsFromUrls({ 
+        urls, 
+        listId: isCreatingNewList ? undefined : (activeList || undefined),
+        forceNewList: isCreatingNewList,
+      }, {
         onSuccess: (result: { listId: string; listName: string; results: Array<{ success: boolean; gift?: any; error?: string; url: string }>; isNewList: boolean }) => {
           const successCount = result.results.filter((r) => r.success).length
           const errorCount = result.results.filter((r) => !r.success).length
@@ -326,6 +337,7 @@ export function GiftLists() {
 
           setGiftUrl("")
           setIsCreatingGiftModal(false)
+          setIsCreatingNewList(false)
           setProcessingUrls([])
           setCompletedUrls(new Set())
           setFailedUrls(new Set())
@@ -336,6 +348,7 @@ export function GiftLists() {
           })
           setGiftUrl("")
           setIsCreatingGiftModal(false)
+          setIsCreatingNewList(false)
           setProcessingUrls([])
           setCompletedUrls(new Set())
           setFailedUrls(new Set())
@@ -390,18 +403,6 @@ export function GiftLists() {
             >
               <Github className="w-4 h-4 sm:w-5 sm:h-5" />
             </a>
-            <Button
-              onClick={() => {
-                setGiftUrl("")
-                setIsCreatingGiftModal(true)
-              }}
-              size="sm"
-              className="gap-1.5 sm:gap-2 text-xs sm:text-sm shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Add Gift</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
           </div>
         </div>
       </header>
@@ -419,6 +420,20 @@ export function GiftLists() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="p-3 sm:p-4 border-b border-border">
+            <Button
+              onClick={() => {
+                setGiftUrl("")
+                setIsCreatingNewList(true)
+                setIsCreatingGiftModal(true)
+              }}
+              size="sm"
+              className="w-full gap-2 text-xs sm:text-sm"
+            >
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>Create New List</span>
             </Button>
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -533,10 +548,11 @@ export function GiftLists() {
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" onClick={() => {
                       setGiftUrl("")
+                      setIsCreatingNewList(false)
                       setIsCreatingGiftModal(true)
                     }} className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
                       <Plus className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Add Gift</span>
+                      <span className="hidden sm:inline">Add gift to this list</span>
                       <span className="sm:hidden">Add</span>
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => handleShareList(currentList)} className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
@@ -564,10 +580,11 @@ export function GiftLists() {
                     <p className="text-muted-foreground">No gifts yet. Add your first item to get started.</p>
                     <Button size="sm" onClick={() => {
                       setGiftUrl("")
+                      setIsCreatingNewList(false)
                       setIsCreatingGiftModal(true)
                     }} className="gap-2 mt-4">
                       <Plus className="w-3.5 h-3.5" />
-                      Add Gift
+                      Add gift to this list
                     </Button>
                   </div>
                 ) : (
@@ -671,6 +688,7 @@ export function GiftLists() {
                   <Button
                     onClick={() => {
                       setGiftUrl("")
+                      setIsCreatingNewList(false)
                       setIsCreatingGiftModal(true)
                     }}
                     className="gap-2"
@@ -785,7 +803,9 @@ export function GiftLists() {
         <div className="fixed inset-0 bg-background/80 flex items-center justify-center p-3 sm:p-4 z-50">
           <div className="bg-card border border-border w-full max-w-md max-h-[90vh] flex flex-col">
             <div className="border-b border-border p-3 sm:p-4 shrink-0">
-              <h3 className="text-base sm:text-lg font-semibold">Add Gift</h3>
+              <h3 className="text-base sm:text-lg font-semibold">
+                {isCreatingNewList ? "Create New List" : activeList ? "Add gift to this list" : "Add Gift"}
+              </h3>
             </div>
             <div className="p-3 sm:p-4 space-y-4 overflow-y-auto flex-1">
               <div>
@@ -824,6 +844,7 @@ export function GiftLists() {
                 onClick={() => {
                   setIsCreatingGiftModal(false)
                   setGiftUrl("")
+                  setIsCreatingNewList(false)
                 }}
                 disabled={isCreatingGiftFromUrl || isCreatingGiftsFromUrls}
                 className="text-xs sm:text-sm touch-manipulation"
@@ -836,7 +857,13 @@ export function GiftLists() {
                 disabled={(isCreatingGiftFromUrl || isCreatingGiftsFromUrls || processingUrls.length > 0) || !giftUrl.trim()}
                 className="text-xs sm:text-sm touch-manipulation"
               >
-                {(isCreatingGiftFromUrl || isCreatingGiftsFromUrls || processingUrls.length > 0) ? `Creating... (${completedUrls.size}/${processingUrls.length || 1})` : "Add Gift"}
+                {(isCreatingGiftFromUrl || isCreatingGiftsFromUrls || processingUrls.length > 0) 
+                  ? `Creating... (${completedUrls.size}/${processingUrls.length || 1})` 
+                  : isCreatingNewList 
+                    ? "Create List" 
+                    : activeList
+                      ? "Add gift to this list"
+                      : "Add Gift"}
               </Button>
             </div>
           </div>
