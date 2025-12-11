@@ -5,6 +5,7 @@ import { giftLists, gifts } from "@/lib/db/schema";
 import { getOrCreateUser } from "@/lib/db/user";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { desc } from "drizzle-orm";
 
 export async function createList(fingerprintId: string, name: string) {
   const { user } = await getOrCreateUser(fingerprintId);

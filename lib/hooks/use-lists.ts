@@ -10,7 +10,7 @@ import {
   deleteList,
   updateListName,
 } from "@/app/actions/lists";
-import { addGift, deleteGift } from "@/app/actions/gifts";
+import { addGift, deleteGift, updateGift, toggleGiftPurchased } from "@/app/actions/gifts";
 import { createGiftFromUrl, createGiftsFromUrls } from "@/app/actions/ai-gift";
 import type { GiftListWithGifts, Gift } from "@/lib/db/schema";
 import { nanoid } from "nanoid";
@@ -181,6 +181,7 @@ export function useLists() {
         url: data.url,
         price: data.price || null,
         priority: data.priority,
+        purchased: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -202,6 +203,144 @@ export function useLists() {
       return { previousData };
     },
     onError: (err, variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          [LISTS_QUERY_KEY, fingerprintId],
+          context.previousData,
+        );
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [LISTS_QUERY_KEY, fingerprintId] });
+    },
+  });
+
+  const updateListNameMutation = useMutation({
+    mutationFn: async ({ listId, name }: { listId: string; name: string }) => {
+      if (!fingerprintId) throw new Error("No fingerprint");
+      return await updateListName(listId, fingerprintId, name);
+    },
+    onMutate: async ({ listId, name }) => {
+      await queryClient.cancelQueries({ queryKey: [LISTS_QUERY_KEY, fingerprintId] });
+
+      const previousData = queryClient.getQueryData<{
+        lists: GiftListWithGifts[];
+        isNewUser: boolean;
+      }>([LISTS_QUERY_KEY, fingerprintId]);
+
+      queryClient.setQueryData<{ lists: GiftListWithGifts[]; isNewUser: boolean }>(
+        [LISTS_QUERY_KEY, fingerprintId],
+        (old) => ({
+          lists: old
+            ? old.lists.map((list) =>
+                list.id === listId ? { ...list, name } : list,
+              )
+            : [],
+          isNewUser: old?.isNewUser || false,
+        }),
+      );
+
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          [LISTS_QUERY_KEY, fingerprintId],
+          context.previousData,
+        );
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [LISTS_QUERY_KEY, fingerprintId] });
+    },
+  });
+
+  const updateGiftMutation = useMutation({
+    mutationFn: async ({
+      giftId,
+      data,
+    }: {
+      giftId: string;
+      data: {
+        name?: string;
+        url?: string;
+        price?: string;
+        priority?: "high" | "medium" | "low";
+        purchased?: boolean;
+      };
+    }) => {
+      if (!fingerprintId) throw new Error("No fingerprint");
+      return await updateGift(giftId, fingerprintId, data);
+    },
+    onMutate: async ({ giftId, data }) => {
+      await queryClient.cancelQueries({ queryKey: [LISTS_QUERY_KEY, fingerprintId] });
+
+      const previousData = queryClient.getQueryData<{
+        lists: GiftListWithGifts[];
+        isNewUser: boolean;
+      }>([LISTS_QUERY_KEY, fingerprintId]);
+
+      queryClient.setQueryData<{ lists: GiftListWithGifts[]; isNewUser: boolean }>(
+        [LISTS_QUERY_KEY, fingerprintId],
+        (old) => ({
+          lists: old
+            ? old.lists.map((list) => ({
+                ...list,
+                gifts: (list.gifts || []).map((gift) =>
+                  gift.id === giftId ? { ...gift, ...data, updatedAt: new Date() } : gift,
+                ),
+              }))
+            : [],
+          isNewUser: old?.isNewUser || false,
+        }),
+      );
+
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          [LISTS_QUERY_KEY, fingerprintId],
+          context.previousData,
+        );
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [LISTS_QUERY_KEY, fingerprintId] });
+    },
+  });
+
+  const toggleGiftPurchasedMutation = useMutation({
+    mutationFn: async (giftId: string) => {
+      if (!fingerprintId) throw new Error("No fingerprint");
+      return await toggleGiftPurchased(giftId, fingerprintId);
+    },
+    onMutate: async (giftId) => {
+      await queryClient.cancelQueries({ queryKey: [LISTS_QUERY_KEY, fingerprintId] });
+
+      const previousData = queryClient.getQueryData<{
+        lists: GiftListWithGifts[];
+        isNewUser: boolean;
+      }>([LISTS_QUERY_KEY, fingerprintId]);
+
+      queryClient.setQueryData<{ lists: GiftListWithGifts[]; isNewUser: boolean }>(
+        [LISTS_QUERY_KEY, fingerprintId],
+        (old) => ({
+          lists: old
+            ? old.lists.map((list) => ({
+                ...list,
+                gifts: (list.gifts || []).map((gift) =>
+                  gift.id === giftId ? { ...gift, purchased: !gift.purchased } : gift,
+                ),
+              }))
+            : [],
+          isNewUser: old?.isNewUser || false,
+        }),
+      );
+
+      return { previousData };
+    },
+    onError: (err, giftId, context) => {
       if (context?.previousData) {
         queryClient.setQueryData(
           [LISTS_QUERY_KEY, fingerprintId],
@@ -281,13 +420,19 @@ export function useLists() {
     fingerprintId,
     createList: createListMutation.mutate,
     deleteList: deleteListMutation.mutate,
+    updateListName: updateListNameMutation.mutate,
     addGift: addGiftMutation.mutate,
+    updateGift: updateGiftMutation.mutate,
+    toggleGiftPurchased: toggleGiftPurchasedMutation.mutate,
     deleteGift: deleteGiftMutation.mutate,
     createGiftFromUrl: createGiftFromUrlMutation.mutate,
     createGiftsFromUrls: createGiftsFromUrlsMutation.mutate,
     isCreatingList: createListMutation.isPending,
     isDeletingList: deleteListMutation.isPending,
+    isUpdatingListName: updateListNameMutation.isPending,
     isAddingGift: addGiftMutation.isPending,
+    isUpdatingGift: updateGiftMutation.isPending,
+    isTogglingGiftPurchased: toggleGiftPurchasedMutation.isPending,
     isDeletingGift: deleteGiftMutation.isPending,
     isCreatingGiftFromUrl: createGiftFromUrlMutation.isPending,
     isCreatingGiftsFromUrls: createGiftsFromUrlsMutation.isPending,
