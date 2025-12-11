@@ -2,12 +2,14 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { notFound } from "next/navigation"
-import { ExternalLink, Check } from "lucide-react"
+import { ExternalLink, Check, Heart, Github } from "lucide-react"
 import { getListByShareToken } from "@/app/actions/lists"
 import { toggleGiftPurchasedPublic } from "@/app/actions/gifts"
 import { toast } from "sonner"
 import type { GiftListWithOwner } from "@/lib/db/schema"
 import { getPriorityLabel } from "@/lib/utils"
+import { CrafterStationLogo } from "@/components/logos/crafter-station"
+import Link from "next/link"
 
 export default function SharedListContent({ token }: { token: string }) {
   const queryClient = useQueryClient()
@@ -156,7 +158,52 @@ export default function SharedListContent({ token }: { token: string }) {
             <p className="text-xs sm:text-sm text-muted-foreground">No gifts on this list yet.</p>
           </div>
         )}
+
+        <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-border">
+          <div className="bg-muted/30 border border-border rounded-lg p-4 sm:p-6 text-center space-y-3 sm:space-y-4">
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Want to create your own list?
+            </p>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-foreground hover:text-primary transition-colors underline underline-offset-4"
+            >
+              Create your gift list →
+            </Link>
+          </div>
+        </div>
       </div>
+
+      <footer className="border-t border-border py-3 px-3 sm:px-6 mt-8 sm:mt-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span>Made with</span>
+              <Heart className="w-3.5 h-3.5 fill-[#F8BC31] text-[#F8BC31] heart-pulse" />
+              <span>by</span>
+              <a
+                href="https://www.crafterstation.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+              >
+                <CrafterStationLogo className="w-4 h-4" />
+                <span className="font-medium">Crafter Station</span>
+              </a>
+            </div>
+            <span className="hidden sm:inline">•</span>
+            <a
+              href="https://github.com/crafter-station/gift0"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+            >
+              <Github className="w-3.5 h-3.5" />
+              {/* <span>View on GitHub</span> */}
+            </a>
+          </div>
+        </div>
+      </footer>
     </main>
   )
 }
