@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { gifts, giftLists } from "@/lib/db/schema";
 import { getOrCreateUser } from "@/lib/db/user";
 import { eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
 
 export async function addGift(
   listId: string,
@@ -146,5 +147,43 @@ export async function deleteGift(giftId: string, fingerprintId: string) {
   }
 
   await db.delete(gifts).where(eq(gifts.id, giftId));
+}
+
+// Create a demo gift with list for onboarding (no Firecrawl)
+export async function createDemoGift(
+  fingerprintId: string,
+  data: {
+    name: string;
+    url: string;
+    price: string;
+    priority: "high" | "medium" | "low";
+  },
+) {
+  const { user } = await getOrCreateUser(fingerprintId);
+  const shareToken = nanoid(12);
+
+  // Create new list
+  const [list] = await db
+    .insert(giftLists)
+    .values({
+      name: "My Wishlist",
+      ownerId: user.id,
+      shareToken,
+    })
+    .returning();
+
+  // Add gift directly
+  const [gift] = await db
+    .insert(gifts)
+    .values({
+      listId: list.id,
+      name: data.name,
+      url: data.url,
+      price: data.price,
+      priority: data.priority,
+    })
+    .returning();
+
+  return { list, gift };
 }
 
